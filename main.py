@@ -1,34 +1,29 @@
-from fastapi import FastAPI, HTTPException, Request, status
+from typing import Annotated
+
+
+from fastapi import FastAPI, HTTPException, Request, status, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from schemas import PostCreate, PostResponse
+import models
+from database import Base, engine, get_db
+from schemas import PostCreate, PostResponse, UserCreate, UserResponse
+
+Base.metadata.create_all(bind=engine)
+
+
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 templates = Jinja2Templates(directory="templates")
-
-posts: list[dict] = [
-    { 
-        "id": 1,
-        "author": "Kilanko Daniel",
-        "title": "Daniel is Awesome",
-        "content": "Daniel is one of a kind, not just kind but he is also cute, nice, and intelligent.",
-        "date_posted": "April 28, 2025",
-    },
-    {
-        "id": 2,
-        "author": "Batman",
-        "title": "I am batman",
-        "content": "It's not who I am underneath, but what I do that defines me.",
-        "date_posted": "April 21, 2025",
-    },
-]
 
 
 @app.get("/", include_in_schema=False, name="home")
@@ -53,6 +48,14 @@ def post_page(request: Request, post_id: int):
             )
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
+
+@app.post(
+    "/api/users",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_users(users: UserCreate):
+    pass
 
 @app.get("/api/posts", response_model=list[PostResponse])
 def get_posts():
